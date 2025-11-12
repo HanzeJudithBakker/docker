@@ -3,3 +3,12 @@ sudo docker network create --subnet 172.31.0.0/16 netB
 
 sudo docker run -d --name mysqlA --network netA -e MYSQL_ROOT_PASSWORD=secret mysql:8
 sudo docker run -d --name mysqlB --network netB -e MYSQL_ROOT_PASSWORD=secret mysql:8
+
+
+# Kleine Alpine-containers om ping & mysql-cli te doen
+sudo docker run -d --name toolboxA --network netA alpine sleep 100000
+sudo docker run -d --name toolboxB --network netB alpine sleep 100000
+
+# Tools installeren
+sudo docker exec toolboxA sh -c "apk add --no-cache iputils mysql-client >/dev/null"
+sudo docker exec toolboxB sh -c "apk add --no-cache iputils mysql-client >/dev/null"
