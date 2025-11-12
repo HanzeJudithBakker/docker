@@ -1,0 +1,21 @@
+IMG="/var/lib/vz/template/iso/debian-12-genericcloud-amd64.qcow2"
+STOR="vmdata"
+BRIDGE="vmbr0"
+GW="10.24.40.1"
+DNS="1.1.1.1"
+CIUSER="student"
+CIPASS="ChangeMe123!"
+
+mkdir -p /var/lib/vz/template/iso
+[ -f "$IMG" ] || curl -L -o "$IMG" https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
+
+qm create 9010 --name docker-vm1 --memory 2048 --cores 2 --net0 virtio,bridge=$BRIDGE --agent 1
+qm importdisk 9010 "$IMG" $STOR --format qcow2
+qm set 9010 --scsihw virtio-scsi-pci --scsi0 ${STOR}:vm-9010-disk-0
+qm set 9010 --ide2 ${STOR}:cloudinit
+qm set 9010 --boot c --bootdisk scsi0
+qm set 9010 --serial0 socket --vga serial0
+qm set 9010 --ciuser "$CIUSER" --cipassword "$CIPASS" --nameserver "$DNS"
+qm set 9010 --ipconfig0 ip=10.24.40.11/24,gw=$GW
+qm start 9010
+
