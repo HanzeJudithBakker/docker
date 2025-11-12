@@ -1,21 +1,70 @@
-IMG="/var/lib/vz/template/iso/debian-12-genericcloud-amd64.qcow2"
+# === Variabelen ===
+IMG="/var/lib/vz/template/iso/ubuntu-22.04-server-cloudimg-amd64.img"
 STOR="vmdata"
 BRIDGE="vmbr0"
 GW="10.24.40.1"
 DNS="1.1.1.1"
 CIUSER="student"
 CIPASS="ChangeMe123!"
+CORES=2
+MEM_MASTER=4096
+MEM_WORKER=3072
 
+# Download cloud image (eenmalig)
 mkdir -p /var/lib/vz/template/iso
-[ -f "$IMG" ] || curl -L -o "$IMG" https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
+[ -f "$IMG" ] || curl -L -o "$IMG" \
+  https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
 
-qm create 9010 --name docker-vm1 --memory 2048 --cores 2 --net0 virtio,bridge=$BRIDGE --agent 1
-qm importdisk 9010 "$IMG" $STOR --format qcow2
-qm set 9010 --scsihw virtio-scsi-pci --scsi0 ${STOR}:vm-9010-disk-0
-qm set 9010 --ide2 ${STOR}:cloudinit
-qm set 9010 --boot c --bootdisk scsi0
-qm set 9010 --serial0 socket --vga serial0
-qm set 9010 --ciuser "$CIUSER" --cipassword "$CIPASS" --nameserver "$DNS"
-qm set 9010 --ipconfig0 ip=10.24.40.11/24,gw=$GW
-qm start 9010
 
+# ---------- VM 401 - MASTER ----------
+VMID=401
+VMNAME="k8s-master"
+VMIP="10.24.40.40/24"
+qm stop $VMID 2>/dev/null || true
+qm destroy $VMID --purge 2>/dev/null || true
+qm create $VMID --name $VMNAME --memory $MEM_MASTER --cores $CORES \
+  --cpu host --net0 virtio,bridge=$BRIDGE --agent 1
+qm importdisk $VMID "$IMG" $STOR --format qcow2
+qm set $VMID --scsihw virtio-scsi-pci --scsi0 ${STOR}:vm-${VMID}-disk-0
+qm set $VMID --ide2 ${STOR}:cloudinit
+qm set $VMID --boot c --bootdisk scsi0
+qm set $VMID --serial0 socket --vga serial0
+qm set $VMID --ciuser "$CIUSER" --cipassword "$CIPASS" --nameserver "$DNS"
+qm set $VMID --ipconfig0 ip=${VMIP},gw=$GW
+qm start $VMID
+
+
+# ---------- VM 402 - WORKER1 ----------
+VMID=402
+VMNAME="k8s-worker1"
+VMIP="10.24.40.41/24"
+qm stop $VMID 2>/dev/null || true
+qm destroy $VMID --purge 2>/dev/null || true
+qm create $VMID --name $VMNAME --memory $MEM_WORKER --cores $CORES \
+  --cpu host --net0 virtio,bridge=$BRIDGE --agent 1
+qm importdisk $VMID "$IMG" $STOR --format qcow2
+qm set $VMID --scsihw virtio-scsi-pci --scsi0 ${STOR}:vm-${VMID}-disk-0
+qm set $VMID --ide2 ${STOR}:cloudinit
+qm set $VMID --boot c --bootdisk scsi0
+qm set $VMID --serial0 socket --vga serial0
+qm set $VMID --ciuser "$CIUSER" --cipassword "$CIPASS" --nameserver "$DNS"
+qm set $VMID --ipconfig0 ip=${VMIP},gw=$GW
+qm start $VMID
+
+
+# ---------- VM 403 - WORKER2 ----------
+VMID=403
+VMNAME="k8s-worker2"
+VMIP="10.24.40.42/24"
+qm stop $VMID 2>/dev/null || true
+qm destroy $VMID --purge 2>/dev/null || true
+qm create $VMID --name $VMNAME --memory $MEM_WORKER --cores $CORES \
+  --cpu host --net0 virtio,bridge=$BRIDGE --agent 1
+qm importdisk $VMID "$IMG" $STOR --format qcow2
+qm set $VMID --scsihw virtio-scsi-pci --scsi0 ${STOR}:vm-${VMID}-disk-0
+qm set $VMID --ide2 ${STOR}:cloudinit
+qm set $VMID --boot c --bootdisk scsi0
+qm set $VMID --serial0 socket --vga serial0
+qm set $VMID --ciuser "$CIUSER" --cipassword "$CIPASS" --nameserver "$DNS"
+qm set $VMID --ipconfig0 ip=${VMIP},gw=$GW
+qm start $VMID
