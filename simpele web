@@ -1,0 +1,14 @@
+mkdir -p web1 web2
+cat > web1/index.html <<'HTML'
+<!doctype html><html><body style="font-family:sans-serif">
+<h1>Hallo vanaf web1</h1>
+<p>Deze pagina komt van container <b>web1</b>.</p>
+</body></html>
+HTML
+
+cat > web2/index.html <<'HTML'
+<!doctype html><html><body style="font-family:sans-serif">
+<h1>Hallo vanaf web2</h1>
+<p>Deze pagina komt van container <b>web2</b>.</p>
+</body></html>
+HTML
